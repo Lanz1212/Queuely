@@ -6,7 +6,7 @@ use App\Livewire\Public\Display;
 use App\Livewire\Public\Tracking;
 
 Route::get('/', function () {
-    return redirect()->route('kiosk');
+    return redirect('/admin');
 });
 
 Route::get('/kiosk', Kiosk::class)->name('kiosk');

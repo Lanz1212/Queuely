@@ -156,6 +156,20 @@ class OperatorCaller extends Page
         }
         $queue->save();
 
+        // Update gate status based on queue status
+        if ($queue->gate_id) {
+            $gate = Gate::find($queue->gate_id);
+            if ($gate) {
+                if ($newStatus == 'loading') {
+                    $gate->status = 'busy';
+                    $gate->save();
+                } elseif ($newStatus == 'completed') {
+                    $gate->status = 'ready';
+                    $gate->save();
+                }
+            }
+        }
+
         QueueLog::create([
             'queue_id' => $queue->id,
             'user_id' => auth()->id(),
@@ -165,6 +179,11 @@ class OperatorCaller extends Page
         ]);
 
         Notification::make()->title('Status antrian diperbarui')->success()->send();
+
+        // Auto-call next queue when completed
+        if ($newStatus == 'completed' && $this->selectedGateId) {
+            $this->callNext();
+        }
     }
     
     public function recall($queueId)

@@ -90,7 +90,7 @@ class QueuesTable
                         return $query
                             ->when(
                                 $data['tanggal'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('queue_date', '=', $date),
                             );
                     }),
             ])

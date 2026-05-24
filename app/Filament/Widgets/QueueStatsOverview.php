@@ -13,11 +13,9 @@ class QueueStatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        $today = Carbon::today();
-        
-        $totalToday = Queue::whereDate('created_at', $today)->count();
-        $completedToday = Queue::whereDate('created_at', $today)->where('status', 'completed')->count();
-        $waitingToday = Queue::whereDate('created_at', $today)->where('status', 'waiting')->count();
+        $totalToday     = Queue::today()->count();
+        $completedToday = Queue::today()->where('status', 'completed')->count();
+        $waitingToday   = Queue::today()->where('status', 'waiting')->count();
 
         return [
             Stat::make('Total Antrian Hari Ini', $totalToday)

@@ -18,7 +18,7 @@ class QueueChart extends ChartWidget
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $count = Queue::whereDate('created_at', $date)->count();
+            $count = Queue::whereDate('queue_date', $date)->count();
             
             $data[] = $count;
             $labels[] = $date->format('d M');

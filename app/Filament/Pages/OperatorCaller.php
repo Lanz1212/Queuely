@@ -214,8 +214,8 @@ class OperatorCaller extends Page
             ->first();
 
         // Statistics
-        $totalToday = Queue::whereDate('created_at', today())->count();
-        $completedToday = Queue::whereDate('created_at', today())->where('status', 'completed')->count();
+        $totalToday     = Queue::today()->count();
+        $completedToday = Queue::today()->where('status', 'completed')->count();
 
         return [
             'gates' => $gates,

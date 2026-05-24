@@ -8,6 +8,7 @@ use App\Models\Service;
 use App\Models\Queue;
 use App\Models\QueueLog;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 
@@ -47,63 +48,69 @@ class Kiosk extends Component
     public function registerQueue()
     {
         $this->validate([
-            'driverName' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'driverName'   => 'nullable|string|max:255',
+            'phone'        => 'nullable|string|max:20',
             'vehiclePlate' => 'nullable|string|max:20',
-            'company' => 'nullable|string|max:255',
+            'company'      => 'nullable|string|max:255',
         ]);
 
-        if (!$this->selectedService)
+        if (!$this->selectedService) {
             return;
+        }
 
-        $today = now()->startOfDay();
+        // Generate queue atomically inside a DB transaction.
+        // lockForUpdate() prevents two concurrent kiosk requests from getting
+        // the same daily_sequence number (race condition safe).
+        $queue = DB::transaction(function () {
+            $today = now()->toDateString();
 
-        // Calculate day number from system start (first queue ever created)
-        $firstQueue = Queue::orderBy('created_at', 'asc')->first();
-        $systemStart = $firstQueue ? $firstQueue->created_at->startOfDay() : clone $today;
-        $dayNumber = $systemStart->diffInDays($today) + 1; // +1 to make it 1-indexed
+            $maxSequence = Queue::where('service_id', $this->selectedService->id)
+                ->where('queue_date', $today)
+                ->lockForUpdate()
+                ->max('daily_sequence') ?? 0;
 
-        // Get count for today for this service (NN)
-        $countToday = Queue::where('service_id', $this->selectedService->id)
-            ->where('created_at', '>=', $today)
-            ->count();
+            $nextSequence = $maxSequence + 1;
 
-        // Generate unique queue number with format M-DDNN
-        $queueNumber = $this->selectedService->code_prefix . '-' .
-                       str_pad($dayNumber, 2, '0', STR_PAD_LEFT) .
-                       str_pad($countToday + 1, 2, '0', STR_PAD_LEFT);
-        $qrHash = Str::random(32);
+            // Display format: e.g. "M-001", "M-002" — resets to 001 each new day
+            $queueNumber = $this->selectedService->code_prefix . '-' .
+                           str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
 
-        $queue = Queue::create([
-            'queue_number' => $queueNumber,
-            'service_id' => $this->selectedService->id,
-            'status' => 'waiting',
-            'driver_name' => $this->driverName,
-            'phone' => $this->phone,
-            'vehicle_plate' => $this->vehiclePlate,
-            'company' => $this->company,
-            'qr_code_hash' => $qrHash,
-            'registered_at' => now(),
-        ]);
+            $newQueue = Queue::create([
+                'queue_number'    => $queueNumber,
+                'queue_date'      => $today,
+                'daily_sequence'  => $nextSequence,
+                'service_id'      => $this->selectedService->id,
+                'status'          => 'waiting',
+                'driver_name'     => $this->driverName ?: null,
+                'phone'           => $this->phone ?: null,
+                'vehicle_plate'   => $this->vehiclePlate ?: null,
+                'company'         => $this->company ?: null,
+                'qr_code_hash'    => Str::random(32),
+                'registered_at'   => now(),
+            ]);
 
-        QueueLog::create([
-            'queue_id' => $queue->id,
-            'action_type' => 'registered',
-            'new_status' => 'waiting',
-        ]);
+            QueueLog::create([
+                'queue_id'    => $newQueue->id,
+                'action_type' => 'registered',
+                'new_status'  => 'waiting',
+            ]);
+
+            return $newQueue;
+        });
 
         $this->queueResult = $queue;
 
-        // Generate Server-side SVG QR Code
-        $trackingUrl = route('tracking', $qrHash);
+        // Generate Server-side SVG QR Code (uses globally-unique qr_code_hash, NOT queue_number)
         $options = new QROptions([
-            'outputType' => QRCode::OUTPUT_MARKUP_SVG,
-            'imageBase64' => false,
-            'svgViewBoxSize' => 150,
-            'addQuietzone' => false,
+            'outputType'      => QRCode::OUTPUT_MARKUP_SVG,
+            'imageBase64'     => false,
+            'svgViewBoxSize'  => 150,
+            'addQuietzone'    => false,
         ]);
-        
-        $this->qrCodeSvg = (new QRCode($options))->render($trackingUrl);
+
+        $this->qrCodeSvg = (new QRCode($options))->render(
+            route('tracking', $queue->qr_code_hash)
+        );
     }
 
     public function printReceipt()

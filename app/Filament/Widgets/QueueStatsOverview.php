@@ -23,7 +23,7 @@ class QueueStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-users')
                 ->color('primary'),
             Stat::make('Antrian Selesai', $completedToday)
-                ->description('Pasien yang telah dilayani')
+                ->description('Truk yang telah selesai proses')
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
             Stat::make('Menunggu Panggilan', $waitingToday)

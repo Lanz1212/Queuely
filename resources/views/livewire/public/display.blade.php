@@ -71,8 +71,9 @@
         </marquee>
     </div>
 
-    <!-- Audio Player -->
-    <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <!-- Audio Players (taruh file di public/sounds/) -->
+    <audio id="bell-open"  src="{{ asset('sounds/bell-open.mp3') }}"  preload="auto"></audio>
+    <audio id="bell-close" src="{{ asset('sounds/bell-close.mp3') }}" preload="auto"></audio>
 
     <script>
         // Clock script
@@ -103,30 +104,36 @@
             isPlaying = true;
 
             const textToSpeak = audioQueue.shift();
-            const bell = document.getElementById('bell');
+            const bellOpen  = document.getElementById('bell-open');
+            const bellClose = document.getElementById('bell-close');
 
-            bell.currentTime = 0;
-            bell.play().then(() => {
-                setTimeout(() => {
+            // Step 1: Bel pembuka
+            bellOpen.currentTime = 0;
+            bellOpen.play().then(() => {
+                // Step 2: Tunggu bel pembuka selesai baru TTS
+                bellOpen.onended = () => {
                     const utterance = new SpeechSynthesisUtterance(textToSpeak);
                     utterance.lang = 'id-ID';
-                    utterance.rate = 0.85; // slightly slower for clarity
-                    
+                    utterance.rate = 0.85;
+
+                    // Step 3: Setelah TTS selesai, bel penutup
                     utterance.onend = () => {
-                        // Play ending bell
-                        bell.currentTime = 0;
-                        bell.play().then(() => {
-                            setTimeout(() => {
+                        bellClose.currentTime = 0;
+                        bellClose.play().then(() => {
+                            bellClose.onended = () => {
                                 isPlaying = false;
                                 playNextInQueue();
-                            }, 2000);
+                            };
+                        }).catch(() => {
+                            isPlaying = false;
+                            playNextInQueue();
                         });
                     };
-                    
+
                     window.speechSynthesis.speak(utterance);
-                }, 1500); // Wait for intro bell to finish roughly
+                };
             }).catch(e => {
-                console.log("Audio play blocked by browser, user interaction needed");
+                console.log('Audio play blocked by browser, user interaction needed');
                 isPlaying = false;
             });
         }

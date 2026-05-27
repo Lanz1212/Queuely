@@ -35,7 +35,7 @@
                     ">
                         <h3 class="text-base font-bold">{{ $gate->name }}</h3>
                         <p class="text-xs font-medium @if($isActive) text-blue-100 @else text-gray-500 dark:text-gray-400 @endif leading-tight">
-                            {{ $gate->notes ?: 'Layanan Umum' }}
+                            {{ $gate->notes ?: 'Muat/Bongkar' }}
                         </p>
                         <div class="flex items-center gap-1.5 mt-1">
                             <span class="w-1.5 h-1.5 rounded-full @if($gate->status == 'ready') bg-emerald-400 @elseif($gate->status == 'busy') bg-yellow-400 @else bg-red-400 @endif"></span>
@@ -71,7 +71,7 @@
                             ">
                                 @if($activeQueue->status == 'called') MEMANGGIL
                                 @elseif($activeQueue->status == 'loading') SEDANG MUAT
-                                @else SEDANG DILAYANI @endif
+                                @else SEDANG PROSES @endif
                             </span>
                             
                             <div class="flex flex-wrap gap-3 justify-center w-full max-w-md">
@@ -105,7 +105,7 @@
                             </div>
 
                             <p class="text-sm font-bold text-blue-600 dark:text-blue-400 animate-pulse">
-                                Sedang memanggil pasien...
+                                Sedang memanggil truk...
                             </p>
                         </div>
                         
@@ -115,13 +115,14 @@
                             <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
                                 <x-heroicon-s-clock class="w-10 h-10 text-gray-400 dark:text-gray-500" />
                             </div>
-                            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Tidak ada pasien yang sedang dipanggil</h2>
+                            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Tidak ada truk yang sedang dipanggil</h2>
                             <p class="text-sm text-gray-400 dark:text-gray-500">Klik tombol "Panggil Antrian Selanjutnya" untuk memulai</p>
                         </div>
                     @endif
 
-                    <!-- Hidden Audio Element -->
-                    <audio id="caller-bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+                    <!-- Hidden Audio Elements (taruh file di public/sounds/) -->
+                    <audio id="caller-bell-open"  src="{{ asset('sounds/bell-open.mp3') }}"  preload="auto"></audio>
+                    <audio id="caller-bell-close" src="{{ asset('sounds/bell-close.mp3') }}" preload="auto"></audio>
                 </div>
 
                 <!-- Daftar Antrian Block -->
@@ -199,7 +200,7 @@
                                 @endif
                             </div>
                             
-                            <p class="text-xs font-medium text-gray-400 mb-2">{{ $currentGate->name }} - {{ $currentGate->notes ?: 'Layanan Umum' }}</p>
+                            <p class="text-xs font-medium text-gray-400 mb-2">{{ $currentGate->name }} - {{ $currentGate->notes ?: 'Muat/Bongkar' }}</p>
                             <h2 class="text-lg font-black tracking-wide mb-8
                                 @if($currentGate->status == 'ready') text-emerald-600 dark:text-emerald-400
                                 @elseif($currentGate->status == 'busy') text-yellow-600 dark:text-yellow-400
@@ -232,7 +233,7 @@
                                 <div class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shadow-sm shadow-blue-500/20">
                                     <x-heroicon-s-users class="w-5 h-5 text-white" />
                                 </div>
-                                <span class="font-bold text-sm text-gray-700 dark:text-gray-300">Total Pasien</span>
+                                <span class="font-bold text-sm text-gray-700 dark:text-gray-300">Total Truk</span>
                             </div>
                             <span class="text-xl font-black text-gray-900 dark:text-white">{{ $totalToday }}</span>
                         </div>
@@ -266,30 +267,34 @@
                     playCall(queueNumber, gateName) {
                         if (this.isPlaying) return;
                         this.isPlaying = true;
-                        
+
                         const text = `Nomor antrian, ${queueNumber}, silakan menuju ke ${gateName}`;
-                        const bell = document.getElementById('caller-bell');
-                        
-                        bell.currentTime = 0;
-                        bell.play().then(() => {
-                            setTimeout(() => {
+                        const bellOpen  = document.getElementById('caller-bell-open');
+                        const bellClose = document.getElementById('caller-bell-close');
+
+                        // Step 1: Bel pembuka
+                        bellOpen.currentTime = 0;
+                        bellOpen.play().then(() => {
+                            // Step 2: Tunggu bel pembuka selesai (pakai onended, bukan setTimeout)
+                            bellOpen.onended = () => {
                                 const utterance = new SpeechSynthesisUtterance(text);
                                 utterance.lang = 'id-ID';
                                 utterance.rate = 0.85;
-                                
+
+                                // Step 3: Setelah TTS selesai, mainkan bel penutup
                                 utterance.onend = () => {
-                                    bell.currentTime = 0;
-                                    bell.play().then(() => {
-                                        setTimeout(() => {
+                                    bellClose.currentTime = 0;
+                                    bellClose.play().then(() => {
+                                        bellClose.onended = () => {
                                             this.isPlaying = false;
-                                        }, 2000);
-                                    });
+                                        };
+                                    }).catch(() => { this.isPlaying = false; });
                                 };
-                                
+
                                 window.speechSynthesis.speak(utterance);
-                            }, 1500);
+                            };
                         }).catch(e => {
-                            console.error("Audio block", e);
+                            console.error('Audio block', e);
                             this.isPlaying = false;
                         });
                     }

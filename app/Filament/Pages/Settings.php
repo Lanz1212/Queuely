@@ -61,9 +61,9 @@ class Settings extends Page implements HasForms, HasActions
                             ->label('Izinkan Multi Login')
                             ->default(true)
                             ->helperText('Jika OFF, akun yang login di device lain otomatis logout.'),
-                    ])
-                    ->statePath('data'),
-            ]);
+                    ]),
+            ])
+            ->statePath('data');
     }
 
     public function saveSettingsAction(): Action

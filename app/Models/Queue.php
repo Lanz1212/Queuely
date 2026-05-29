@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Model Queue
+ * Menyimpan data utama antrean pelanggan, termasuk status, informasi kendaraan, dan waktu proses.
+ */
 class Queue extends Model
 {
     use HasFactory;
@@ -27,6 +31,9 @@ class Queue extends Model
         'completed_at',
     ];
 
+    /**
+     * Mengatur konversi tipe data otomatis untuk beberapa atribut.
+     */
     protected function casts(): array
     {
         return [
@@ -38,24 +45,36 @@ class Queue extends Model
         ];
     }
 
+    /**
+     * Relasi ke model Service.
+     * Mengambil data jenis layanan untuk antrean ini.
+     */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
+    /**
+     * Relasi ke model Gate.
+     * Mengambil data gerbang yang memproses antrean ini.
+     */
     public function gate()
     {
         return $this->belongsTo(Gate::class);
     }
 
+    /**
+     * Relasi ke model QueueLog.
+     * Mengambil seluruh riwayat log yang terkait dengan antrean ini.
+     */
     public function logs()
     {
         return $this->hasMany(QueueLog::class);
     }
 
     /**
-     * Scope: only queues created on the given business date (defaults to today).
-     * Use this everywhere you need "today's" queues so it auto-resets at midnight.
+     * Scope: Mengambil data antrean berdasarkan tanggal tertentu.
+     * Jika tanggal tidak diberikan, secara default akan menggunakan tanggal hari ini (reset setiap tengah malam).
      */
     public function scopeForDate(Builder $query, $date = null): Builder
     {
@@ -63,7 +82,7 @@ class Queue extends Model
     }
 
     /**
-     * Scope: only queues for today's business date.
+     * Scope: Mengambil data antrean khusus untuk hari ini.
      */
     public function scopeToday(Builder $query): Builder
     {

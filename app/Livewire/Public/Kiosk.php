@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 
+/**
+ * Komponen Livewire untuk Mesin Kiosk/Anjungan Mandiri.
+ * Menangani proses pengambilan tiket antrean oleh pelanggan atau pengemudi.
+ */
 class Kiosk extends Component
 {
     public $services;
@@ -24,16 +28,25 @@ class Kiosk extends Component
     public $queueResult = null;
     public $qrCodeSvg = null;
 
+    /**
+     * Memuat daftar layanan yang aktif saat komponen pertama kali diinisialisasi.
+     */
     public function mount()
     {
         $this->services = Service::where('is_active', true)->get();
     }
 
+    /**
+     * Memilih jenis layanan yang akan diambil antreannya.
+     */
     public function selectService($serviceId)
     {
         $this->selectedService = Service::find($serviceId);
     }
 
+    /**
+     * Membatalkan proses dan mereset form ke kondisi awal.
+     */
     public function cancel()
     {
         $this->selectedService = null;
@@ -45,6 +58,10 @@ class Kiosk extends Component
         $this->qrCodeSvg = null;
     }
 
+    /**
+     * Mendaftarkan antrean baru ke dalam sistem.
+     * Menggunakan transaction database untuk menghindari duplikasi nomor antrean pada saat bersamaan.
+     */
     public function registerQueue()
     {
         $this->validate([
@@ -58,9 +75,8 @@ class Kiosk extends Component
             return;
         }
 
-        // Generate queue atomically inside a DB transaction.
-        // lockForUpdate() prevents two concurrent kiosk requests from getting
-        // the same daily_sequence number (race condition safe).
+        // Membuat antrean secara aman menggunakan transaksi DB dan lockForUpdate
+        // untuk mencegah nomor urut ganda pada hari yang sama.
         $queue = DB::transaction(function () {
             $today = now()->toDateString();
 
@@ -71,7 +87,7 @@ class Kiosk extends Component
 
             $nextSequence = $maxSequence + 1;
 
-            // Display format: e.g. "M-001", "M-002" — resets to 001 each new day
+            // Format nomor antrean, contoh: "M-001" (reset setiap hari baru)
             $queueNumber = $this->selectedService->code_prefix . '-' .
                            str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
 
@@ -100,7 +116,7 @@ class Kiosk extends Component
 
         $this->queueResult = $queue;
 
-        // Generate Server-side SVG QR Code (uses globally-unique qr_code_hash, NOT queue_number)
+        // Menghasilkan QR Code SVG dari sisi server yang mengarah ke halaman pelacakan
         $options = new QROptions([
             'outputType'      => QRCode::OUTPUT_MARKUP_SVG,
             'imageBase64'     => false,
@@ -113,19 +129,27 @@ class Kiosk extends Component
         );
     }
 
+    /**
+     * Memicu dialog cetak struk antrean pada browser pengguna.
+     */
     public function printReceipt()
     {
-        // Simple client-side print trigger - do NOT reset here,
-        // reset will be triggered from client after print dialog closes
+        // Memicu event browser agar mencetak struk, reset terjadi setelah dialog ditutup
         $this->dispatch('print-receipt');
     }
 
+    /**
+     * Menangkap event 'reset-kiosk' dari browser untuk mereset tampilan Kiosk.
+     */
     #[On('reset-kiosk')]
     public function resetKiosk()
     {
         $this->cancel();
     }
 
+    /**
+     * Merender tampilan utama dari Kiosk.
+     */
     public function render()
     {
         return view('livewire.public.kiosk')->layout('components.layouts.app', ['title' => 'Kiosk Registrasi']);

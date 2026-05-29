@@ -6,16 +6,26 @@ use Filament\Widgets\ChartWidget;
 use App\Models\Queue;
 use Carbon\Carbon;
 
+/**
+ * Widget Filament: QueueChart
+ * Menampilkan grafik garis tren jumlah antrean harian selama 7 hari terakhir.
+ */
 class QueueChart extends ChartWidget
 {
     protected ?string $heading = 'Trend Antrian (7 Hari Terakhir)';
     protected static ?int $sort = 2;
 
+    /**
+     * Mengambil dan memformat data untuk ditampilkan di grafik.
+     * 
+     * @return array Konfigurasi dataset dan label untuk grafik.
+     */
     protected function getData(): array
     {
         $data = [];
         $labels = [];
 
+        // Menghitung mundur dari 6 hari yang lalu hingga hari ini (total 7 hari)
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $count = Queue::whereDate('queue_date', $date)->count();
@@ -38,6 +48,9 @@ class QueueChart extends ChartWidget
         ];
     }
 
+    /**
+     * Menentukan tipe grafik.
+     */
     protected function getType(): string
     {
         return 'line';

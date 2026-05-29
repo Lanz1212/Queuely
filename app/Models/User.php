@@ -11,13 +11,17 @@ use Illuminate\Notifications\Notifiable;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
+/**
+ * Model User
+ * Mengelola data pengguna sistem, termasuk hak akses dan peran (role) pada aplikasi.
+ */
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Atribut yang dapat diisi secara massal (mass assignable).
      *
      * @var list<string>
      */
@@ -28,6 +32,9 @@ class User extends Authenticatable implements FilamentUser
         'role',
     ];
 
+    /**
+     * Memeriksa apakah pengguna memiliki akses ke panel Filament tertentu berdasarkan perannya.
+     */
     public function canAccessPanel(Panel $panel): bool
     {
         return match ($panel->getId()) {
@@ -37,18 +44,24 @@ class User extends Authenticatable implements FilamentUser
         };
     }
 
+    /**
+     * Memeriksa apakah pengguna memiliki peran 'admin'.
+     */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
+    /**
+     * Memeriksa apakah pengguna memiliki peran 'operator'.
+     */
     public function isOperator(): bool
     {
         return $this->role === 'operator';
     }
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atribut yang harus disembunyikan saat serialisasi (misalnya respons JSON).
      *
      * @var list<string>
      */
@@ -58,7 +71,7 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Mendefinisikan tipe data untuk atribut tertentu.
      *
      * @return array<string, string>
      */

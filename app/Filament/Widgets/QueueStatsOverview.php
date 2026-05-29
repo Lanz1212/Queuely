@@ -7,12 +7,22 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use App\Models\Queue;
 use Carbon\Carbon;
 
+/**
+ * Widget Filament: QueueStatsOverview
+ * Menampilkan kartu ringkasan statistik antrean hari ini di dashboard.
+ */
 class QueueStatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
 
+    /**
+     * Mengumpulkan data statistik (Total, Selesai, Menunggu) untuk hari ini.
+     * 
+     * @return array Daftar objek Stat untuk ditampilkan.
+     */
     protected function getStats(): array
     {
+        // Menggunakan scope today() dari model Queue
         $totalToday     = Queue::today()->count();
         $completedToday = Queue::today()->where('status', 'completed')->count();
         $waitingToday   = Queue::today()->where('status', 'waiting')->count();

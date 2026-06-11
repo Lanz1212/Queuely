@@ -10,6 +10,11 @@ class EditQueue extends EditRecord
 {
     protected static string $resource = QueueResource::class;
 
+    public function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

@@ -56,6 +56,10 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Pengaturan'),
                 NavigationGroup::make('Display Kiosk'),
             ])
+            ->renderHook(
+                'panels::body.end',
+                fn () => view('components.admin-audio-player'),
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

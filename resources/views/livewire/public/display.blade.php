@@ -71,10 +71,6 @@
         </marquee>
     </div>
 
-    <!-- Audio Players (taruh file di public/sounds/) -->
-    <audio id="bell-open"  src="{{ asset('sounds/bell-open.mp3') }}"  preload="auto"></audio>
-    <audio id="bell-close" src="{{ asset('sounds/bell-close.mp3') }}" preload="auto"></audio>
-
     <script>
         // Clock script
         function updateClock() {
@@ -86,61 +82,5 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
-
-        // Audio Queue System
-        const audioQueue = [];
-        let isPlaying = false;
-
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('play-call', (data) => {
-                const callText = `Truk dengan nomor antrian, ${data.queueNumber}, silakan masuk ke ${data.gateName}`;
-                audioQueue.push(callText);
-                playNextInQueue();
-            });
-        });
-
-        function playNextInQueue() {
-            if (isPlaying || audioQueue.length === 0) return;
-            isPlaying = true;
-
-            const textToSpeak = audioQueue.shift();
-            const bellOpen  = document.getElementById('bell-open');
-            const bellClose = document.getElementById('bell-close');
-
-            // Step 1: Bel pembuka
-            bellOpen.currentTime = 0;
-            bellOpen.play().then(() => {
-                // Step 2: Tunggu bel pembuka selesai baru TTS
-                bellOpen.onended = () => {
-                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-                    utterance.lang = 'id-ID';
-                    utterance.rate = 0.85;
-
-                    // Step 3: Setelah TTS selesai, bel penutup
-                    utterance.onend = () => {
-                        bellClose.currentTime = 0;
-                        bellClose.play().then(() => {
-                            bellClose.onended = () => {
-                                isPlaying = false;
-                                playNextInQueue();
-                            };
-                        }).catch(() => {
-                            isPlaying = false;
-                            playNextInQueue();
-                        });
-                    };
-
-                    window.speechSynthesis.speak(utterance);
-                };
-            }).catch(e => {
-                console.log('Audio play blocked by browser, user interaction needed');
-                isPlaying = false;
-            });
-        }
-        
-        // Initial click to unlock audio context in browsers
-        document.body.addEventListener('click', function() {
-            // Unmute trick if necessary
-        }, { once: true });
     </script>
 </div>

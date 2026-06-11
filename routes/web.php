@@ -5,6 +5,7 @@ use App\Livewire\Auth\Login;
 use App\Livewire\Public\Kiosk;
 use App\Livewire\Public\Display;
 use App\Livewire\Public\Tracking;
+use App\Models\QueueLog;
 
 /**
  * Routing Aplikasi
@@ -31,3 +32,24 @@ Route::post('/logout', function () {
 Route::get('/kiosk', Kiosk::class)->name('kiosk');         // Anjungan mandiri pengambilan nomor
 Route::get('/display', Display::class)->name('display');   // Layar monitor pemanggilan antrean
 Route::get('/track/{qr_code_hash}', Tracking::class)->name('tracking'); // Pelacakan status antrean via QR
+
+// Endpoint polling audio untuk Admin (digunakan oleh browser Admin lintas perangkat)
+Route::get('/admin-audio-poll', function () {
+    abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+
+    $after = request()->integer('after', 0);
+
+    $calls = QueueLog::where('action_type', 'called')
+        ->where('id', '>', $after)
+        ->orderBy('id', 'asc')
+        ->with(['queue.gate'])
+        ->get()
+        ->map(fn ($log) => [
+            'id'          => $log->id,
+            'queueNumber' => $log->queue?->queue_number ?? '',
+            'gateName'    => $log->queue?->gate?->name ?? '',
+        ])
+        ->values();
+
+    return response()->json(['calls' => $calls]);
+})->name('admin.audio.poll');

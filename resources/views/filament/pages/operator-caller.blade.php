@@ -85,7 +85,7 @@
                                     <x-heroicon-s-check-circle class="w-5 h-5" />
                                     Selesai
                                 </button>
-                                <button @click="playCall('{{ $activeQueue->queue_number }}', '{{ $gates->find($selectedGateId)?->name }}')" wire:click="recall({{ $activeQueue->id }})" class="flex-1 py-3.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 font-bold flex items-center justify-center gap-2 transition border border-blue-100 dark:border-blue-800/50">
+                                <button wire:click="recall({{ $activeQueue->id }})" class="flex-1 py-3.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 font-bold flex items-center justify-center gap-2 transition border border-blue-100 dark:border-blue-800/50">
                                     <x-heroicon-s-arrow-path class="w-5 h-5" />
                                     Panggil Ulang
                                 </button>
@@ -120,9 +120,6 @@
                         </div>
                     @endif
 
-                    <!-- Hidden Audio Elements (taruh file di public/sounds/) -->
-                    <audio id="caller-bell-open"  src="{{ asset('sounds/bell-open.mp3') }}"  preload="auto"></audio>
-                    <audio id="caller-bell-close" src="{{ asset('sounds/bell-close.mp3') }}" preload="auto"></audio>
                 </div>
 
                 <!-- Daftar Antrian Block -->
@@ -257,47 +254,15 @@
             document.addEventListener('alpine:init', () => {
                 Alpine.data('voiceController', () => ({
                     isPlaying: false,
-                    
+
                     init() {
-                        Livewire.on('trigger-play-call', (data) => {
-                            this.playCall(data[0].queueNumber, data[0].gateName);
+                        window.addEventListener('queuely:audio-start', () => {
+                            this.isPlaying = true;
                         });
-                    },
-                    
-                    playCall(queueNumber, gateName) {
-                        if (this.isPlaying) return;
-                        this.isPlaying = true;
-
-                        const text = `Nomor antrian, ${queueNumber}, silakan menuju ke ${gateName}`;
-                        const bellOpen  = document.getElementById('caller-bell-open');
-                        const bellClose = document.getElementById('caller-bell-close');
-
-                        // Step 1: Bel pembuka
-                        bellOpen.currentTime = 0;
-                        bellOpen.play().then(() => {
-                            // Step 2: Tunggu bel pembuka selesai (pakai onended, bukan setTimeout)
-                            bellOpen.onended = () => {
-                                const utterance = new SpeechSynthesisUtterance(text);
-                                utterance.lang = 'id-ID';
-                                utterance.rate = 0.85;
-
-                                // Step 3: Setelah TTS selesai, mainkan bel penutup
-                                utterance.onend = () => {
-                                    bellClose.currentTime = 0;
-                                    bellClose.play().then(() => {
-                                        bellClose.onended = () => {
-                                            this.isPlaying = false;
-                                        };
-                                    }).catch(() => { this.isPlaying = false; });
-                                };
-
-                                window.speechSynthesis.speak(utterance);
-                            };
-                        }).catch(e => {
-                            console.error('Audio block', e);
+                        window.addEventListener('queuely:audio-end', () => {
                             this.isPlaying = false;
                         });
-                    }
+                    },
                 }));
             });
         </script>

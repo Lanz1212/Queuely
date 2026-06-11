@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateQueue extends CreateRecord
 {
     protected static string $resource = QueueResource::class;
+
+    public function authorizeAccess(): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+    }
 }

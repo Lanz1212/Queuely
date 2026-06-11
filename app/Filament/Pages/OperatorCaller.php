@@ -83,9 +83,6 @@ class OperatorCaller extends Page
             'notes' => 'Called to ' . $gate->name
         ]);
 
-        // Trigger Audio in browser
-        $this->dispatch('trigger-play-call', queueNumber: $nextQueue->queue_number, gateName: $gate->name);
-
         Notification::make()->title("Antrian {$nextQueue->queue_number} berhasil dipanggil")->success()->send();
     }
     
@@ -127,9 +124,6 @@ class OperatorCaller extends Page
             'new_status' => 'called',
             'notes' => 'Specific call to ' . $gate->name
         ]);
-        
-        // Trigger Audio in browser
-        $this->dispatch('trigger-play-call', queueNumber: $queue->queue_number, gateName: $gate->name);
         
         Notification::make()->title("Antrian {$queue->queue_number} berhasil dipanggil")->success()->send();
     }

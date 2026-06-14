@@ -103,15 +103,194 @@
         if (!audioUnlocked) window.__queuelyAudioUnlock();
     }, { once: true });
 
+    /* ─── Pre-recorded audio ────────────────────────────── */
+    const AUDIO_BASE    = '/sounds/queue/';
+    let usePreRecorded  = false;
+
+    (function checkAudioMode() {
+        fetch(AUDIO_BASE + 'phrase_nomor-antrian.mp3', { method: 'HEAD', cache: 'no-store' })
+            .then(function (r) { usePreRecorded = r.ok; })
+            .catch(function () { usePreRecorded = false; });
+    })();
+
+    function queueNumberToSegments(queueNumber) {
+        var segs = [];
+        var cleaned = queueNumber.replace(/[^a-zA-Z0-9]/g, '');
+        for (var i = 0; i < cleaned.length; i++) {
+            var ch = cleaned[i].toLowerCase();
+            if (ch >= 'a' && ch <= 'z') {
+                segs.push(AUDIO_BASE + 'letter_' + ch + '.mp3');
+            } else if (ch >= '0' && ch <= '9') {
+                segs.push(AUDIO_BASE + 'digit_' + ch + '.mp3');
+            }
+        }
+        return segs;
+    }
+
+    function buildPlaylist(item) {
+        var list = [AUDIO_BASE + 'phrase_nomor-antrian.mp3'];
+        list = list.concat(queueNumberToSegments(item.queueNumber));
+        list.push(AUDIO_BASE + 'phrase_silakan-menuju-ke.mp3');
+        if (item.gateId) {
+            list.push(AUDIO_BASE + 'gate_' + item.gateId + '.mp3');
+        }
+        return list;
+    }
+
+    /* ─── Trim silence from decoded AudioBuffer ────────── */
+    function trimBuffer(ctx, buffer) {
+        var data      = buffer.getChannelData(0);
+        var threshold = 0.007;
+        var pad       = Math.floor(buffer.sampleRate * 0.015); // 15 ms
+        var start = 0, end = data.length - 1;
+        for (var i = 0; i < data.length; i++) {
+            if (Math.abs(data[i]) > threshold) { start = Math.max(0, i - pad); break; }
+        }
+        for (var i = data.length - 1; i > start; i--) {
+            if (Math.abs(data[i]) > threshold) { end = Math.min(data.length - 1, i + pad); break; }
+        }
+        if (end <= start) return null;
+        var len = end - start + 1;
+        var out = ctx.createBuffer(1, len, buffer.sampleRate);
+        out.getChannelData(0).set(data.subarray(start, end + 1));
+        return out;
+    }
+
+    /* ─── Web Audio API seamless chain (primary) ─────────── */
+    function playSegmentChainSeamless(urls, onComplete) {
+        var ACtx = window.AudioContext || window.webkitAudioContext;
+        if (!ACtx) { playSegmentChainLegacy(urls, onComplete); return; }
+        var ctx;
+        try { ctx = new ACtx(); } catch (e) { playSegmentChainLegacy(urls, onComplete); return; }
+
+        Promise.all(urls.map(function (url) {
+            return fetch(url)
+                .then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+                .catch(function () { return null; });
+        })).then(function (rawBuffers) {
+            var valid = rawBuffers.filter(function (b) { return b !== null; });
+            if (!valid.length) { ctx.close(); onComplete(); return Promise.reject('empty'); }
+
+            return Promise.all(valid.map(function (ab) {
+                return new Promise(function (resolve) {
+                    ctx.decodeAudioData(ab, resolve, function () { resolve(null); });
+                });
+            }));
+
+        }).then(function (decoded) {
+            var buffers = decoded
+                .filter(function (b) { return b !== null; })
+                .map(function (b) { return trimBuffer(ctx, b); })
+                .filter(function (b) { return b !== null; });
+
+            if (!buffers.length) { ctx.close(); onComplete(); return; }
+
+            var sr  = buffers[0].sampleRate;
+            var GAP = Math.floor(sr * 0.05); // 50 ms gap between words
+            var totalLen = buffers.reduce(function (s, b) { return s + b.length; }, 0)
+                         + Math.max(0, buffers.length - 1) * GAP;
+
+            var combined = ctx.createBuffer(1, totalLen, sr);
+            var dest = combined.getChannelData(0);
+            var off  = 0;
+            buffers.forEach(function (b, i) {
+                dest.set(b.getChannelData(0), off);
+                off += b.length;
+                if (i < buffers.length - 1) off += GAP;
+            });
+
+            var src = ctx.createBufferSource();
+            src.buffer  = combined;
+            src.connect(ctx.destination);
+            src.onended = function () { try { ctx.close(); } catch (_) {} onComplete(); };
+            src.start(0);
+
+        }).catch(function (err) {
+            if (err !== 'empty') { try { ctx.close(); } catch (_) {} }
+            onComplete();
+        });
+    }
+
+    /* ─── Legacy sequential fallback ────────────────────── */
+    function playSegmentChainLegacy(urls, onComplete) {
+        var index = 0;
+        function playNext() {
+            if (index >= urls.length) { onComplete(); return; }
+            var url   = urls[index++];
+            var audio = new Audio(url);
+            audio.onended = playNext;
+            audio.onerror = playNext;
+            audio.play().catch(playNext);
+        }
+        playNext();
+    }
+
+    function playWithRecorded(item, bellClose, onDone) {
+        playSegmentChainSeamless(buildPlaylist(item), function () {
+            bellClose.currentTime = 0;
+            bellClose.play().then(function () {
+                bellClose.onended = onDone;
+            }).catch(onDone);
+        });
+    }
+
+    /* ─── TTS fallback (fixed — no deadlock) ────────────── */
+    var cachedVoice = null;
+
+    function pickVoice() {
+        if (cachedVoice) return cachedVoice;
+        if (!window.speechSynthesis) return null;
+        var voices = window.speechSynthesis.getVoices();
+        if (!voices.length) return null;
+        cachedVoice =
+            voices.find(function (v) { return (v.lang === 'id-ID' || v.lang === 'id_ID') && v.localService; }) ||
+            voices.find(function (v) { return v.localService; }) ||
+            null;
+        return cachedVoice;
+    }
+
+    if (window.speechSynthesis) {
+        window.speechSynthesis.addEventListener('voiceschanged', function () { cachedVoice = null; });
+    }
+
+    function playWithTTS(item, bellClose, onDone) {
+        if (!window.speechSynthesis) { onDone(); return; }
+
+        var text      = 'Nomor antrian, ' + item.queueNumber + ', silakan menuju ke ' + item.gateName;
+        var utterance = new SpeechSynthesisUtterance(text);
+        var voice     = pickVoice();
+        if (voice) utterance.voice = voice;
+        utterance.lang = voice ? voice.lang : 'id-ID';
+        utterance.rate = 0.85;
+
+        var ttsTimeout = setTimeout(function () {
+            window.speechSynthesis.cancel();
+            finishTTS();
+        }, 12000);
+
+        function finishTTS() {
+            clearTimeout(ttsTimeout);
+            bellClose.currentTime = 0;
+            bellClose.play().then(function () {
+                bellClose.onended = onDone;
+            }).catch(onDone);
+        }
+
+        utterance.onend  = finishTTS;
+        utterance.onerror = function () { finishTTS(); };
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }
+
     /* ─── Memutar antrian audio ──────────────────────────── */
     function playNextInQueue() {
         if (isPlaying || callQueue.length === 0 || !audioUnlocked) return;
         isPlaying = true;
 
-        const item      = callQueue.shift();
-        const bellOpen  = document.getElementById('global-bell-open');
-        const bellClose = document.getElementById('global-bell-close');
-        const text      = 'Nomor antrian, ' + item.queueNumber + ', silakan menuju ke ' + item.gateName;
+        var item      = callQueue.shift();
+        var bellOpen  = document.getElementById('global-bell-open');
+        var bellClose = document.getElementById('global-bell-close');
 
         window.dispatchEvent(new CustomEvent('queuely:audio-start', { detail: item }));
 
@@ -124,16 +303,11 @@
         bellOpen.currentTime = 0;
         bellOpen.play().then(function () {
             bellOpen.onended = function () {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang  = 'id-ID';
-                utterance.rate  = 0.85;
-                utterance.onend = function () {
-                    bellClose.currentTime = 0;
-                    bellClose.play().then(function () {
-                        bellClose.onended = onDone;
-                    }).catch(onDone);
-                };
-                window.speechSynthesis.speak(utterance);
+                if (usePreRecorded) {
+                    playWithRecorded(item, bellClose, onDone);
+                } else {
+                    playWithTTS(item, bellClose, onDone);
+                }
             };
         }).catch(function () {
             audioUnlocked = false;
@@ -161,7 +335,7 @@
                 localStorage.setItem('queuely_audio_last_id', lastLogId);
                 if (bc) bc.postMessage({ type: 'claimed', logId: call.id });
                 if (call.queueNumber && call.gateName) {
-                    callQueue.push({ queueNumber: call.queueNumber, gateName: call.gateName });
+                    callQueue.push({ queueNumber: call.queueNumber, gateName: call.gateName, gateId: call.gateId });
                     playNextInQueue();
                 }
             });

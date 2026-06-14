@@ -48,6 +48,7 @@ Route::get('/admin-audio-poll', function () {
             'id'          => $log->id,
             'queueNumber' => $log->queue?->queue_number ?? '',
             'gateName'    => $log->queue?->gate?->name ?? '',
+            'gateId'      => $log->queue?->gate?->id,
         ])
         ->values();
 

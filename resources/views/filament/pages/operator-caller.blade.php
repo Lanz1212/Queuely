@@ -62,7 +62,7 @@
                                 <x-heroicon-s-user class="w-8 h-8 text-blue-600 dark:text-blue-400" />
                             </div>
                             <h2 class="text-7xl font-black text-gray-900 dark:text-white tracking-tighter mb-1">{{ $activeQueue->queue_number }}</h2>
-                            <p class="text-lg font-bold text-gray-500 dark:text-gray-400 mb-6">{{ $activeQueue->service->name }}</p>
+                            <p class="text-lg font-bold text-gray-500 dark:text-gray-400 mb-6">{{ $activeQueue->service->activity_title }}</p>
                             
                             <span class="px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-8
                                 @if($activeQueue->status == 'called') bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800
@@ -70,7 +70,7 @@
                                 @else bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 @endif
                             ">
                                 @if($activeQueue->status == 'called') MEMANGGIL
-                                @elseif($activeQueue->status == 'loading') SEDANG MUAT
+                                @elseif($activeQueue->status == 'loading') {{ strtoupper($activeQueue->service->activity_status) }}
                                 @else SEDANG PROSES @endif
                             </span>
                             
@@ -78,7 +78,7 @@
                                 @if($activeQueue->status == 'called')
                                     <button wire:click="changeStatus({{ $activeQueue->id }}, 'loading')" class="flex-1 py-3.5 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 font-bold flex items-center justify-center gap-2 transition border border-yellow-100 dark:border-yellow-800/50">
                                         <x-heroicon-s-arrow-down-tray class="w-5 h-5" />
-                                        Muat
+                                        {{ $activeQueue->service->activity_label }}
                                     </button>
                                 @endif
                                 <button wire:click="changeStatus({{ $activeQueue->id }}, 'completed')" class="flex-1 py-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 font-bold flex items-center justify-center gap-2 transition border border-red-100 dark:border-red-800/50">

@@ -4,12 +4,13 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\OperatorCaller;
 use App\Filament\Resources\Queues\QueueResource;
+use App\Http\Middleware\ApplySessionSettings;
 use App\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -51,6 +52,7 @@ class OperatorPanelProvider extends PanelProvider
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
+                ApplySessionSettings::class,
                 StartSession::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,

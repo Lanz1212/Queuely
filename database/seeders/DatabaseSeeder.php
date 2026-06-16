@@ -34,9 +34,9 @@ class DatabaseSeeder extends Seeder
 
         // Services
         Service::insert([
-            ['name' => 'Muat Produk', 'code_prefix' => 'M', 'color' => '#10B981', 'estimated_time' => 30],
-            ['name' => 'Bongkar Produk', 'code_prefix' => 'B', 'color' => '#3B82F6', 'estimated_time' => 45],
-            ['name' => 'Retur Barang', 'code_prefix' => 'R', 'color' => '#F59E0B', 'estimated_time' => 20],
+            ['name' => 'Muat Produk',   'code_prefix' => 'M', 'color' => '#10B981', 'estimated_time' => 30, 'activity_type' => 'muat'],
+            ['name' => 'Bongkar Produk','code_prefix' => 'B', 'color' => '#3B82F6', 'estimated_time' => 45, 'activity_type' => 'bongkar'],
+            ['name' => 'Retur Barang',  'code_prefix' => 'R', 'color' => '#F59E0B', 'estimated_time' => 20, 'activity_type' => 'retur'],
         ]);
 
         // Gates

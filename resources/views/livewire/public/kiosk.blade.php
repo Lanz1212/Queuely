@@ -70,21 +70,29 @@
                     </button>
 
                     <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">Layanan: {{ $selectedService->name }}</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">Silakan lengkapi data di bawah (Opsional) atau langsung cetak nomor antrian.</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Silakan lengkapi seluruh data di bawah ini sebelum mengambil nomor antrian.</p>
 
                     <form wire:submit="registerQueue" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Supir / Pengantar</label>
-                            <input wire:model="driverName" type="text" class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4" placeholder="Misal: Budi">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Supir / Pengantar <span class="text-red-500">*</span></label>
+                            <input wire:model="driverName" type="text" required class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 @error('driverName') border-red-500 @enderror" placeholder="Misal: Budi">
+                            @error('driverName') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No. Telepon <span class="text-red-500">*</span></label>
+                            <input wire:model="phone" type="text" required class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 @error('phone') border-red-500 @enderror" placeholder="Misal: 08123456789">
+                            @error('phone') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No Polisi / Plat Kendaraan</label>
-                                <input wire:model="vehiclePlate" type="text" class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 uppercase" placeholder="Misal: B 1234 CD">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No Polisi / Plat Kendaraan <span class="text-red-500">*</span></label>
+                                <input wire:model="vehiclePlate" type="text" required class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 uppercase @error('vehiclePlate') border-red-500 @enderror" placeholder="Misal: B 1234 CD">
+                                @error('vehiclePlate') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asal Ekspedisi / Perusahaan</label>
-                                <input wire:model="company" type="text" class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4" placeholder="Misal: PT Logistik Indah">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asal Ekspedisi / Perusahaan <span class="text-red-500">*</span></label>
+                                <input wire:model="company" type="text" required class="w-full rounded-lg border-gray-300 dark:border-white/10 dark:bg-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 @error('company') border-red-500 @enderror" placeholder="Misal: PT Logistik Indah">
+                                @error('company') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                             </div>
                         </div>
 

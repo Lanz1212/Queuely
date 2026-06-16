@@ -39,7 +39,7 @@
                 
                 <div class="flex-1 flex flex-col items-center justify-center p-4 md:p-8 bg-gray-50 dark:bg-gray-900/50 relative">
                     @if($display['queue'])
-                        <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold mb-2">{{ $display['queue']->service->name }}</p>
+                        <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 uppercase tracking-widest font-bold mb-2">{{ $display['queue']->service->activity_title }}</p>
                         <h3 class="text-5xl md:text-7xl lg:text-8xl font-black text-blue-600 dark:text-blue-400 tracking-tighter mb-4">{{ $display['queue']->queue_number }}</h3>
                         <p class="text-base md:text-xl px-4 md:px-6 py-2 rounded-lg font-bold
                             @if($display['queue']->status == 'called') bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800
@@ -47,9 +47,9 @@
                             @else bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 @endif
                         ">
                             @if($display['queue']->status == 'called') MEMANGGIL...
-                            @elseif($display['queue']->status == 'loading') SEDANG MUAT
+                            @elseif($display['queue']->status == 'loading') {{ strtoupper($display['queue']->service->activity_status) }}
                             @elseif($display['queue']->status == 'heading_to_gate') MENUJU GATE
-                            @else PROSES LOADING
+                            @else {{ strtoupper($display['queue']->service->activity_status) }}
                             @endif
                         </p>
                         @if($display['queue']->status == 'called')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Services\Schemas;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -16,6 +17,14 @@ class ServiceForm
                     ->required(),
                 TextInput::make('code_prefix')
                     ->required(),
+                Select::make('activity_type')
+                    ->required()
+                    ->options([
+                        'muat'    => 'Muat',
+                        'bongkar' => 'Bongkar (Bahan Baku)',
+                        'retur'   => 'Retur (Bongkar Produk)',
+                    ])
+                    ->default('muat'),
                 TextInput::make('color')
                     ->default(null),
                 TextInput::make('estimated_time')

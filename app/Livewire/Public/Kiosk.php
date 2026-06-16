@@ -65,10 +65,10 @@ class Kiosk extends Component
     public function registerQueue()
     {
         $this->validate([
-            'driverName'   => 'nullable|string|max:255',
-            'phone'        => 'nullable|string|max:20',
-            'vehiclePlate' => 'nullable|string|max:20',
-            'company'      => 'nullable|string|max:255',
+            'driverName'   => 'required|string|max:255',
+            'phone'        => 'required|string|max:20',
+            'vehiclePlate' => 'required|string|max:20',
+            'company'      => 'required|string|max:255',
         ]);
 
         if (!$this->selectedService) {
@@ -152,6 +152,6 @@ class Kiosk extends Component
      */
     public function render()
     {
-        return view('livewire.public.kiosk')->layout('components.layouts.app', ['title' => 'Kiosk Registrasi']);
+        return view('livewire.public.kiosk')->layout('components.layouts.app', ['title' => 'Cetak Antrian']);
     }
 }

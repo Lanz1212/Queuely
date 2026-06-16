@@ -69,7 +69,7 @@
         x-transition.opacity
         class="mt-3 text-xs text-center text-gray-400 dark:text-gray-500"
     >
-        Akses terbatas: dasbor, daftar antrian, dan pemanggilan
+        Akses terbatas: dashboard, daftar antrian, dan pemanggilan
     </p>
 
     <div class="border-t border-gray-100 dark:border-white/10 mt-5"></div>

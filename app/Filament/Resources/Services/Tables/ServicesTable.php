@@ -19,6 +19,18 @@ class ServicesTable
                     ->searchable(),
                 TextColumn::make('code_prefix')
                     ->searchable(),
+                TextColumn::make('activity_type')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'bongkar' => 'info',
+                        'retur'   => 'warning',
+                        default   => 'success',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'bongkar' => 'Bongkar',
+                        'retur'   => 'Retur',
+                        default   => 'Muat',
+                    }),
                 TextColumn::make('color')
                     ->searchable(),
                 TextColumn::make('estimated_time')

@@ -7,7 +7,7 @@
 
         {{-- Title --}}
         <h1 class="lp-title">Masuk ke Queuely</h1>
-        <p class="lp-sub">Sistem Antrian Muat Produk</p>
+        <p class="lp-sub">Sistem Antrian Gudang</p>
 
         {{-- Role Selector --}}
         <div x-data="{ role: $wire.entangle('selectedRole') }">
@@ -35,7 +35,7 @@
             </div>
             <p class="lp-role-desc">
                 <span x-show="role === 'admin'" x-transition.opacity>Akses penuh ke semua fitur sistem</span>
-                <span x-show="role === 'operator'" x-transition.opacity>Dasbor, antrian, dan pemanggilan</span>
+                <span x-show="role === 'operator'" x-transition.opacity>Dashboard, antrian, dan pemanggilan</span>
             </p>
         </div>
 
@@ -108,6 +108,6 @@
         </form>
     </div>
 
-    <p class="lp-footer">&copy; {{ date('Y') }} Sistem Antrian Muat Produk</p>
+    <p class="lp-footer">&copy; {{ date('Y') }} Sistem Antrian Gudang</p>
 
 </div>

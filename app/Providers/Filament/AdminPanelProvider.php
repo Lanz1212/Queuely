@@ -2,11 +2,12 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\ApplySessionSettings;
 use App\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -36,17 +37,17 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->brandName('Queuely')
             ->navigationItems([
-                NavigationItem::make('Kiosk Ruang Tunggu')
+                NavigationItem::make('Ruang Tunggu')
                     ->url(fn (): string => route('display'))
                     ->icon('heroicon-o-tv')
-                    ->group('Display Kiosk')
+                    ->group('Display & Registrasi')
                     ->openUrlInNewTab()
                     ->visible(fn (): bool => auth()->user()?->isAdmin() ?? false)
                     ->sort(1),
-                NavigationItem::make('Kiosk Cetak Antrian')
+                NavigationItem::make('Cetak Antrian')
                     ->url(fn (): string => route('kiosk'))
                     ->icon('heroicon-o-qr-code')
-                    ->group('Display Kiosk')
+                    ->group('Display & Registrasi')
                     ->openUrlInNewTab()
                     ->visible(fn (): bool => auth()->user()?->isAdmin() ?? false)
                     ->sort(2),
@@ -54,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Loket'),
                 NavigationGroup::make('Pengaturan'),
-                NavigationGroup::make('Display Kiosk'),
+                NavigationGroup::make('Display & Registrasi'),
             ])
             ->renderHook(
                 'panels::body.end',
@@ -73,6 +74,7 @@ class AdminPanelProvider extends PanelProvider
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
+                ApplySessionSettings::class,
                 StartSession::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,

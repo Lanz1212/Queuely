@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\Login;
-use App\Livewire\Public\Kiosk;
-use App\Livewire\Public\Display;
-use App\Livewire\Public\Tracking;
+use App\Livewire\Kiosk\Register;
+use App\Livewire\Display\Board;
+use App\Livewire\Queue\Tracking;
 use App\Models\QueueLog;
 
 /**
@@ -29,8 +29,8 @@ Route::post('/logout', function () {
 })->name('logout');
 
 // Halaman antarmuka publik
-Route::get('/kiosk', Kiosk::class)->name('kiosk');         // Anjungan mandiri pengambilan nomor
-Route::get('/display', Display::class)->name('display');   // Layar monitor pemanggilan antrean
+Route::get('/kiosk', Register::class)->name('kiosk');      // Anjungan mandiri pengambilan nomor
+Route::get('/display', Board::class)->name('display');     // Layar monitor pemanggilan antrean
 Route::get('/track/{qr_code_hash}', Tracking::class)->name('tracking'); // Pelacakan status antrean via QR
 
 // Endpoint polling audio untuk Admin (digunakan oleh browser Admin lintas perangkat)

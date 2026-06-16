@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Public;
+namespace App\Livewire\Display;
 
 use Livewire\Component;
 use App\Models\Queue;
@@ -8,18 +8,18 @@ use App\Models\Gate;
 use Livewire\Attributes\Layout;
 
 /**
- * Komponen Livewire untuk Layar Tampilan (Display).
- * Digunakan untuk menampilkan nomor antrean yang sedang dipanggil di setiap loket.
+ * Komponen Livewire untuk Layar Tampilan (Display Board).
+ * Digunakan untuk menampilkan nomor antrian yang sedang dipanggil di setiap loket.
  */
-class Display extends Component
+class Board extends Component
 {
     /**
-     * Merender tampilan utama layar antrean.
+     * Merender tampilan utama layar antrian.
+     * Mengambil seluruh loket aktif beserta antrian yang sedang diproses.
      */
     #[Layout('components.layouts.app')]
     public function render()
     {
-        // Mengambil seluruh loket yang aktif berserta antrean yang sedang diproses
         $gates = Gate::all();
         $gateDisplays = [];
 
@@ -30,12 +30,12 @@ class Display extends Component
                 ->first();
 
             $gateDisplays[] = [
-                'gate' => $gate,
-                'queue' => $activeQueue
+                'gate'  => $gate,
+                'queue' => $activeQueue,
             ];
         }
 
-        return view('livewire.public.display', [
+        return view('livewire.display.board', [
             'gateDisplays' => $gateDisplays,
         ]);
     }

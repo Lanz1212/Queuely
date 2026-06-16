@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Pages\Page;
 use App\Models\Gate;
 use App\Models\Queue;
-use App\Models\QueueLog;
+use App\Services\OperatorQueueService;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 
@@ -49,39 +49,12 @@ class OperatorCaller extends Page
             return;
         }
 
-        // Find the oldest waiting queue
-        $nextQueue = Queue::where('status', 'waiting')
-            ->orderBy('created_at', 'asc')
-            ->first();
+        $nextQueue = app(OperatorQueueService::class)->callNext($this->selectedGateId, auth()->id());
 
         if (!$nextQueue) {
             Notification::make()->title('Tidak ada antrian menunggu')->warning()->send();
             return;
         }
-
-        // Update current active queue in this gate to completed if it was just loading
-        Queue::where('gate_id', $this->selectedGateId)
-            ->whereIn('status', ['called', 'heading_to_gate', 'loading'])
-            ->update([
-                'status' => 'completed',
-                'completed_at' => now()
-            ]);
-
-        // Call the next one
-        $nextQueue->update([
-            'status' => 'called',
-            'gate_id' => $this->selectedGateId,
-            'called_at' => now(),
-        ]);
-
-        QueueLog::create([
-            'queue_id' => $nextQueue->id,
-            'user_id' => auth()->id(),
-            'action_type' => 'called',
-            'old_status' => 'waiting',
-            'new_status' => 'called',
-            'notes' => 'Called to ' . $gate->name
-        ]);
 
         Notification::make()->title("Antrian {$nextQueue->queue_number} berhasil dipanggil")->success()->send();
     }
@@ -99,104 +72,45 @@ class OperatorCaller extends Page
             return;
         }
 
-        $queue = Queue::find($queueId);
-        if (!$queue || $queue->status !== 'waiting') return;
-        
-        // Update current active queue in this gate to completed if it was just loading
-        Queue::where('gate_id', $this->selectedGateId)
-            ->whereIn('status', ['called', 'heading_to_gate', 'loading'])
-            ->update([
-                'status' => 'completed',
-                'completed_at' => now()
-            ]);
-            
-        $queue->update([
-            'status' => 'called',
-            'gate_id' => $this->selectedGateId,
-            'called_at' => now(),
-        ]);
-        
-        QueueLog::create([
-            'queue_id' => $queue->id,
-            'user_id' => auth()->id(),
-            'action_type' => 'called',
-            'old_status' => 'waiting',
-            'new_status' => 'called',
-            'notes' => 'Specific call to ' . $gate->name
-        ]);
-        
+        $queue = app(OperatorQueueService::class)->callSpecific($queueId, $this->selectedGateId, auth()->id());
+
+        if (!$queue) {
+            return;
+        }
+
         Notification::make()->title("Antrian {$queue->queue_number} berhasil dipanggil")->success()->send();
     }
     
     public function toggleGateStatus()
     {
-        if (!$this->selectedGateId) return;
-        $gate = Gate::find($this->selectedGateId);
-        $gate->status = $gate->status === 'ready' ? 'busy' : 'ready'; // Simplification for Buka/Tutup
-        $gate->save();
-        
+        if (!$this->selectedGateId) {
+            return;
+        }
+
+        app(OperatorQueueService::class)->toggleGateStatus($this->selectedGateId);
+
         Notification::make()->title('Status loket diperbarui')->success()->send();
     }
 
     public function changeStatus($queueId, $newStatus)
     {
-        $queue = Queue::find($queueId);
-        if (!$queue) return;
-
-        $oldStatus = $queue->status;
-        $queue->status = $newStatus;
-        if ($newStatus == 'completed') {
-            $queue->completed_at = now();
-        }
-        $queue->save();
-
-        // Update gate status based on queue status
-        if ($queue->gate_id) {
-            $gate = Gate::find($queue->gate_id);
-            if ($gate) {
-                if ($newStatus == 'loading') {
-                    $gate->status = 'busy';
-                    $gate->save();
-                } elseif ($newStatus == 'completed') {
-                    $gate->status = 'ready';
-                    $gate->save();
-                }
-            }
-        }
-
-        QueueLog::create([
-            'queue_id' => $queue->id,
-            'user_id' => auth()->id(),
-            'action_type' => 'status_changed',
-            'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-        ]);
+        app(OperatorQueueService::class)->changeStatus($queueId, $newStatus, auth()->id());
 
         Notification::make()->title('Status antrian diperbarui')->success()->send();
 
         // Auto-call next queue when completed
-        if ($newStatus == 'completed' && $this->selectedGateId) {
+        if ($newStatus === 'completed' && $this->selectedGateId) {
             $this->callNext();
         }
     }
-    
+
     public function recall($queueId)
     {
-        $queue = Queue::find($queueId);
-        if (!$queue) return;
-        
-        $queue->update(['called_at' => now()]);
-        
-        QueueLog::create([
-            'queue_id' => $queue->id,
-            'user_id' => auth()->id(),
-            'action_type' => 'called',
-            'old_status' => $queue->status,
-            'new_status' => $queue->status,
-            'notes' => 'Recalled'
-        ]);
-        
-        Notification::make()->title("Antrian {$queue->queue_number} dipanggil ulang")->success()->send();
+        $queue = app(OperatorQueueService::class)->recall($queueId, auth()->id());
+
+        if ($queue) {
+            Notification::make()->title("Antrian {$queue->queue_number} dipanggil ulang")->success()->send();
+        }
     }
 
     protected function getViewData(): array
